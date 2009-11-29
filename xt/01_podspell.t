@@ -8,3 +8,4 @@ __DATA__
 kazeburo
 kazeburo {at} gmail.com
 Plack::Server::AnyEvent::Prefork
+HTTP
