@@ -7,6 +7,8 @@ use Parallel::Prefork;
 use Guard;
 use Try::Tiny;
 use Time::HiRes;
+use AnyEvent::Socket;
+use POSIX;
 
 our $VERSION = '0.01';
 
@@ -17,6 +19,27 @@ sub new {
     $self->{max_reqs_per_child} = $args{max_reqs_per_child} || 100;
     $self->{header_read_timeout} = $args{header_read_timeout} || 180;
     $self;
+}
+
+sub _create_tcp_server {
+    my ( $self, $app ) = @_;
+
+    my $server = tcp_server $self->{host}, $self->{port}, $self->_accept_handler($app), sub {
+        my ( $fh, $host, $port ) = @_;
+        $self->{listen_socket} = $fh;
+        $self->{prepared_host} = $host;
+        $self->{prepared_port} = $port;
+        warn "Accepting requests at http://$host:$port/\n";
+        return 0;
+    };
+    my $t;
+    $t = AE::timer 0, 1, sub {
+        if(! POSIX::fstat(fileno($self->{listen_socket}))){ # closed
+            $self->{exit_guard}->send;
+            undef $t;
+        }
+    };
+    $server;
 }
 
 sub _create_req_parsing_watcher {
