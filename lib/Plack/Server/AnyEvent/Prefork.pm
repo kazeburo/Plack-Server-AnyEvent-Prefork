@@ -17,7 +17,14 @@ sub new {
     my $self = $class->SUPER::new(%args);
     $self->{max_workers} = $args{max_workers} || 10;
     $self->{max_reqs_per_child} = $args{max_reqs_per_child} || 100;
+    $self->{min_reqs_per_child} = $args{min_reqs_per_child} || 0;
     $self->{header_read_timeout} = $args{header_read_timeout} || 180;
+
+    if ( $self->{min_reqs_per_child} ) {
+        $self->{max_reqs_per_child} = $self->{min_reqs_per_child}
+            + int(rand( $self->{max_reqs_per_child} - $self->{min_reqs_per_child}));
+    }
+
     $self;
 }
 
@@ -142,6 +149,7 @@ Plack::Server::AnyEvent::Prefork - Prefork AnyEvent based HTTP Server
       port => $port,
       max_workers => $n,
       max_reqs_per_child => $n,
+      min_reqs_per_child => $n,
   );
   $server->run($app);
 
