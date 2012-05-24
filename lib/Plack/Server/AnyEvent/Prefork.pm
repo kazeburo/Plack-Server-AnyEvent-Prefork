@@ -76,6 +76,12 @@ sub _create_req_parsing_watcher {
     };
 }
 
+sub _run_app {
+    my($self, $app, $env, $sock) = @_;
+    $env->{'psgix.exit_guard'} = $self->{exit_guard};
+    $self->SUPER::_run_app($app,$env,$sock);
+}
+
 sub _accept_handler {
     my $self   = shift;
     my $app    = shift;
