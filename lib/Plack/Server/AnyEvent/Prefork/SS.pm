@@ -61,7 +61,7 @@ __END__
 
 =head1 NAME
 
-Plack::Server::AnyEvent::Prefork - Prefork AnyEvent based HTTP Server
+Plack::Server::AnyEvent::Prefork::SS - Prefork AnyEvent based HTTP Server 
 
 =head1 SYNOPSIS
 
