@@ -8,7 +8,7 @@ tests 't/*.t';
 author_tests 'xt';
 
 requires 'Plack::Server::AnyEvent' => 0.03;
-requires 'Parallel::Prefork';
+requires 'Parallel::Prefork' => 0.13;
 requires 'Guard';
 requires 'Try::Tiny';
 requires 'Time::HiRes';

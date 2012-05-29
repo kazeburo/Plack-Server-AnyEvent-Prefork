@@ -19,12 +19,6 @@ sub new {
     $self->{max_reqs_per_child} = $args{max_reqs_per_child} || 100;
     $self->{min_reqs_per_child} = $args{min_reqs_per_child} || 0;
     $self->{header_read_timeout} = $args{header_read_timeout} || 180;
-
-    if ( $self->{min_reqs_per_child} ) {
-        $self->{max_reqs_per_child} = $self->{min_reqs_per_child}
-            + int(rand( $self->{max_reqs_per_child} - $self->{min_reqs_per_child}));
-    }
-
     $self;
 }
 
@@ -53,16 +47,16 @@ sub _create_req_parsing_watcher {
     my ( $self, $sock, $try_parse, $app ) = @_;
 
     my $headers_io_watcher;
-    my $io_failed = guard {
-        #warn "$$ I/O failed";
-        undef $headers_io_watcher;
-        try { $self->{exit_guard}->end; $sock->close };
-    };
 
-    my $header_timeout = $self->{header_read_timeout} || 5;
-    my $timeout = AE::timer $header_timeout, 0, sub {
-        #warn "I/O timeout";
-        undef $io_failed; # fire the guard
+    my $header_timeout = $self->{header_read_timeout};
+    my $timeout;
+    $timeout = AE::timer $header_timeout, 0, sub {
+        warn "timeout $$";
+        undef $timeout;
+        undef $headers_io_watcher;
+        undef $try_parse;
+        undef $sock;
+        try { $self->{exit_guard}->end; };
     };
 
     # called repeatedly until undef'd:
@@ -71,13 +65,11 @@ sub _create_req_parsing_watcher {
             if ( my $env = $try_parse->() ) {
                 undef $headers_io_watcher;
                 undef $timeout;
-                $io_failed->cancel();
                 $self->_run_app($app, $env, $sock);
             }
         } catch {
             undef $headers_io_watcher;
             undef $timeout;
-            $io_failed->cancel();
             $self->_bad_request($sock);
         }
     };
@@ -117,6 +109,13 @@ sub run {
         trap_signals => {
             TERM => 'TERM',
             HUP  => 'TERM',
+        },
+        before_fork => sub {
+            srand();
+            if ( $self->{min_reqs_per_child} ) {
+                $self->{max_reqs_per_child} = $self->{min_reqs_per_child}
+                    + int(rand( $self->{max_reqs_per_child} - $self->{min_reqs_per_child}));
+            }
         },
     });
     while ($pm->signal_received ne 'TERM') {
