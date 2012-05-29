@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use parent qw(Plack::Server::AnyEvent);
 use Parallel::Prefork;
-use Guard;
 use Try::Tiny;
 use Time::HiRes;
 use AnyEvent::Socket;
